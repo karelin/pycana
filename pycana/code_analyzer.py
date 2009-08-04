@@ -58,7 +58,6 @@ class CodeAnalyzer(object):
         for n1 in all_classes:
             for i, super_n1 in enumerate(n1.mro()[1:-1]):
                 if any(issubclass(super_n1, klass) for klass in n1.mro()[1:1+i]): 
-                    import ipdb;ipdb.set_trace()
                     continue
                 if super_n1 not in all_classes: 
                     new_classes.add(super_n1)
