@@ -56,12 +56,14 @@ class CodeAnalyzer(object):
  
         new_classes= set()
         for n1 in all_classes:
-            super_n1= n1.mro()[1]
-            if super_n1 == object: continue
-            if super_n1 not in all_classes: 
-                new_classes.add(super_n1)
-            relation= InheritanceRelation(n1, super_n1)
-            inheritance_relations[n1].append(relation)
+            for i, super_n1 in enumerate(n1.mro()[1:-1]):
+                if any(issubclass(super_n1, klass) for klass in n1.mro()[1:1+i]): 
+                    import ipdb;ipdb.set_trace()
+                    continue
+                if super_n1 not in all_classes: 
+                    new_classes.add(super_n1)
+                relation= InheritanceRelation(n1, super_n1)
+                inheritance_relations[n1].append(relation)
 
         all_classes.update(new_classes) 
 
