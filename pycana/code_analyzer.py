@@ -20,6 +20,7 @@ def itercontainer(c):
 class CodeAnalyzer(object):
     def __init__(self, *base_modules):
         self.base_modules= base_modules
+        self.already_checked= set()
 
     def analyze(self, exceptions=None):
         variables= currentframe(1).f_locals
@@ -44,8 +45,25 @@ class CodeAnalyzer(object):
         for related in aggregation_relations.itervalues():
             all_classes.update(i.object2 for i in related)
 
-        relations= aggregation_relations
+
+        # prune aggregation relations
         inheritance_relations= self._build_inheritance_relations(all_classes)
+        for n1, parents in inheritance_relations.iteritems():
+            to_remove= set()
+            for pr in parents:
+                for agr2 in aggregation_relations.get(pr.object2, []):
+                    if agr2 in to_remove: continue
+                    for agr1 in aggregation_relations.get(n1, []):
+                        if agr1 in to_remove: continue
+                        if agr1.object2 == agr2.object2 and agr1.attrname == agr2.attrname:
+                            to_remove.add(agr1)
+            
+            for agr in to_remove:
+                if agr not in aggregation_relations[n1]: import ipdb;ipdb.set_trace()
+                aggregation_relations[n1].remove(agr)
+
+
+        relations= aggregation_relations
         for klass, related in inheritance_relations.iteritems():
             relations[klass].update(related)
 
@@ -91,11 +109,19 @@ class CodeAnalyzer(object):
         return inheritance_relations
 
     def _belongs_to_module(self, var):
-        var_module= getmodule(var.__class__)
-        return any(var_module.__name__.startswith(base_module.__name__) for base_module in self.base_modules)
+        try: 
+            var_module= getmodule(var.__class__)
+            return any(var_module.__name__.startswith(base_module.__name__) for base_module in self.base_modules)
+        except AttributeError: 
+            return False
+        except Exception, e:
+            import ipdb;ipdb.set_trace()
+            return False
         
     def _get_aggregation_relations(self, module_var, module_vars, aggregation_relations):
         assert module_var in module_vars
+        if id(module_var) in self.already_checked: return
+
         aggregation_relations[module_var.__class__]
 
         for attrname, attrvalue in getmembers(module_var):
@@ -114,6 +140,10 @@ class CodeAnalyzer(object):
                     relation= AggregationRelation(module_var.__class__, container_module_var.__class__, attrname, is_multiple=True)
                     aggregation_relations[module_var.__class__].add(relation)
 
+
+        self.already_checked.add(id(module_var))
+
+
     def _container_relations(self, container, module_vars, aggregation_relations):
         container_module_vars= []
         for iterable in itercontainer(container):
@@ -128,7 +158,7 @@ class CodeAnalyzer(object):
 
     def draw_relations(self, relations, fname):
         def get_node_name(n):
-            return n.__name__
+            return getmodule(n).__name__ + ':' + n.__name__
 
         g= AGraph(directed=True)
         for n in relations:
