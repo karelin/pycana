@@ -165,6 +165,17 @@ class CodeAnalyzer(object):
             n_name= get_node_name(n)
             g.add_node(n_name)
 
+        if draw_packages:
+            assert package_function is not None
+            subgraphs= defaultdict(list)
+            for n in g.nodes():
+                package= package_function(n)
+                if package:
+                    subgraphs[package].append(n)
+            
+            for i, (package, nodes) in enumerate(subgraphs.iteritems()):
+                subgraph= g.subgraph(nbunch=nodes, name='cluster%s' % i, color='black', label=package)
+
         for relation in chain(*relations.itervalues()):
             n1_name= get_node_name(relation.object1)
             n2_name= get_node_name(relation.object2)
@@ -176,16 +187,6 @@ class CodeAnalyzer(object):
         for n in g.nodes():
             n.attr['shape']= 'box'
 
-        if draw_packages:
-            assert package_function is not None
-            subgraphs= defaultdict(list)
-            for n in g.nodes():
-                package= package_function(n)
-                if package:
-                    subgraphs[package].append(n)
-            
-            for i, (package, nodes) in enumerate(subgraphs.iteritems()):
-                subgraph= g.subgraph(nbunch=nodes, name='cluster%s' % i, color='black', label=package)
 
 
 
