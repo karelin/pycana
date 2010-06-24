@@ -156,7 +156,7 @@ class CodeAnalyzer(object):
                     container_module_vars.extend(self._container_relations(e, module_vars, aggregation_relations))
         return container_module_vars                    
 
-    def draw_relations(self, relations, fname):
+    def draw_relations(self, relations, fname, draw_packages=False, package_function=None):
         def get_node_name(n):
             return getmodule(n).__name__ + ':' + n.__name__
 
@@ -175,6 +175,19 @@ class CodeAnalyzer(object):
 
         for n in g.nodes():
             n.attr['shape']= 'box'
+
+        if draw_packages:
+            assert package_function is not None
+            subgraphs= defaultdict(list)
+            for n in g.nodes():
+                package= package_function(n)
+                if package:
+                    subgraphs[package].append(n)
+            
+            for i, (package, nodes) in enumerate(subgraphs.iteritems()):
+                subgraph= g.subgraph(nbunch=nodes, name='cluster%s' % i, color='black', label=package)
+
+
 
         g.draw(fname, prog='dot', args='-Grankdir=TB')
         
