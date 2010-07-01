@@ -161,9 +161,9 @@ class CodeAnalyzer(object):
             return getmodule(n).__name__ + ':' + n.__name__
 
         g= AGraph(directed=True)
-        for n in relations:
-            n_name= get_node_name(n)
-            g.add_node(n_name)
+        for relation in chain(*relations.itervalues()):
+            g.add_node(get_node_name(relation.object1))
+            g.add_node(get_node_name(relation.object2))
 
         if draw_packages:
             assert package_function is not None
